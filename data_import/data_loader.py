@@ -69,16 +69,7 @@ for nyear in range(1,len(data)):
     data_encoded = data_encoded.drop(['FTR_A','FTR_D','FTR_H'], axis=1) #drop the FTR classifier
     clean_data = np.vstack((clean_data,data_encoded.to_numpy()))
     clean_data_df = pd.concat([clean_data_df, data_encoded], ignore_index=True, axis=0)
-    
 
-#clean_y_num = []
-#for i in range(0,len(clean_y)): #i am sure there is built in function or something better, just hacking this now
-    #if clean_y[i] == 'H':
-        #clean_y_num[i] = 1
-    #elif clean_y[i] == 'A':
-        #clean_y_num[i] = 0
-    #else:
-        #clean_y_num[i] = 2
 
 
     
