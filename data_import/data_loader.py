@@ -5,6 +5,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn import manifold, decomposition
 from sklearn.preprocessing import OrdinalEncoder
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from matplotlib import offsetbox
@@ -138,6 +139,24 @@ gammaval = 1.5
 #reg.fit(X.reshape(-1,1),ytrain)
 
 #y_predrbf = reg.predict(xtest.reshape(-1,1))
+
+
+#Support Vector Regression
+
+# Regression requires numeric categories
+label_encoder = LabelEncoder()
+y_train_numeric = label_encoder.fit_transform(y_train)
+y_test_numeric = label_encoder.fit_transform(y_test)
+
+# These values are hard coded in after I ran it through the loop to find the optimal values
+svr_reg = SVR(C = 10, epsilon = 0.01, kernel = 'rbf', gamma=0.1)
+svr_reg.fit(X_train, y_train_numeric)
+
+y_pred = svr_reg.predict(X_test)
+
+mse = mean_squared_error(y_test_numeric, y_pred)
+
+print('Mean Squared Error SVR with RBF = ', mse)
 
 
 
