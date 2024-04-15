@@ -118,16 +118,17 @@ plt.colorbar(graph)
 logRegr = LogisticRegression()
 logRegr.fit(X_train,y_train)
 pred = logRegr.predict(X_test)
-#score = logRegr.score(pred,y_test)
-#print(score)
+score = logRegr.score(pred,y_test)
+print(score)
 
+'''
 #how many were wrong?
 fake_score = 0
 for i,predval in enumerate(pred):
     if predval!=y_test[i]:
         fake_score = fake_score+1 #+1 for each wrong
 print(fake_score/len(pred))
-
+'''
 
 
 #kernel rbf

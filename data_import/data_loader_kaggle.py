@@ -149,12 +149,12 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, random_s
 
 ###############PCA dim reduction (to play with), this uses its own preprocessing not the scaled data
 
-n_reducedfeatures = 3
+n_reducedfeatures = 10
 
 pca = decomposition.PCA(n_components=n_reducedfeatures)
 pca.fit(X_train)
 x_PCA = pca.transform(X_test)
-
+print('PCA total variance sum: ' + str(sum(pca.explained_variance_ratio_)))
 print(pd.DataFrame(pca.components_,columns=X_train.columns,index = ['PC-1','PC-2','PC-3']))
 
 fig = px.scatter_3d(x=x_PCA[:,0],y=x_PCA[:,1],z=x_PCA[:,2],color = y_test.to_numpy().reshape(-1))
