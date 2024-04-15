@@ -149,7 +149,7 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, random_s
 
 ###############PCA dim reduction (to play with), this uses its own preprocessing not the scaled data
 
-n_reducedfeatures = 10
+n_reducedfeatures = 3
 
 pca = decomposition.PCA(n_components=n_reducedfeatures)
 pca.fit(X_train)
