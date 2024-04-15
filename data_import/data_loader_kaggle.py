@@ -103,7 +103,7 @@ df_encoded = df_Data[categorical_columns].apply(preprocessing.LabelEncoder().fit
 data_encoded = pd.concat([df_Data[int_columns], df_encoded], axis=1)
 df_Data = data_encoded
 
-#standardize only the int colums
+#standardize only the int colums need to swap this to after the train/test split to normalize
 sc = StandardScaler()
 df_Data[int_columns] = sc.fit_transform(df_Data[int_columns])
 df_Data_away = df_Data
