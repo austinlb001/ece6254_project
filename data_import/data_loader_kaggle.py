@@ -119,7 +119,7 @@ for i in range(0,df_Data.shape[0]):
     y.append(win)
 
 
-X = df_Data
+X = df_Data.drop(['home_team_goal','away_team_goal'],axis=1)
 y = pd.DataFrame(y)
 
 
