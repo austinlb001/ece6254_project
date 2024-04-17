@@ -51,11 +51,6 @@ for i in range(0,df_Match.shape[0]):
         tmp_attr.append(result)
         tmp_match.append(df_Match.iloc[[i]])
         tmp_attr_away.append(result_away)
-        #tmp_match_away.append(df_Match.iloc[[i]])
-        #df_tmp = pd.concat([df_Match.iloc[i],result], axis=1)
-        #df_Data = pd.concat([df_Data,df_tmprow], axis=0)
-        #df_Data = pd.concat([df_Data,df_tmp], axis=0)
-        #print(i)
 
 
 
@@ -69,7 +64,7 @@ tmp_match = tmp_match[['home_team_goal', 'away_team_goal']]
 df_Data = pd.concat([tmp_attr,tmp_match],axis=1)
 drop_list = ['id', 'team_fifa_api_id', 'team_api_id', 'date', 'buildUpPlayDribbling'] #too many NA in dribbling
 df_Data = df_Data.drop(drop_list, axis=1)
-df_Data = df_Data.dropna()
+#df_Data = df_Data.dropna()
 
 
     
@@ -80,10 +75,6 @@ int_columns = df_Data.select_dtypes(include=['int']).columns.tolist()
 df_encoded = df_Data[categorical_columns].apply(preprocessing.LabelEncoder().fit_transform)
 data_encoded = pd.concat([df_Data[int_columns], df_encoded], axis=1)
 df_Data = data_encoded
-
-#standardize only the int colums
-sc = StandardScaler()
-df_Data[int_columns] = sc.fit_transform(df_Data[int_columns])
 df_Data_home = df_Data
 ##########################
 
@@ -102,17 +93,17 @@ int_columns = df_Data.select_dtypes(include=['int']).columns.tolist()
 df_encoded = df_Data[categorical_columns].apply(preprocessing.LabelEncoder().fit_transform)
 data_encoded = pd.concat([df_Data[int_columns], df_encoded], axis=1)
 df_Data = data_encoded
-
-#standardize only the int colums need to swap this to after the train/test split to normalize
-sc = StandardScaler()
-df_Data[int_columns] = sc.fit_transform(df_Data[int_columns])
 df_Data_away = df_Data
 
 df_Data = df_Data_home - df_Data_away
-#######################
+###########################
 
 df_Data = pd.concat([df_Data,tmp_match],axis=1)
 df_Data = df_Data.dropna()
+
+print(df_Data.head())
+
+con.close()
 
 y = []
 for i in range(0,df_Data.shape[0]):
@@ -121,45 +112,44 @@ for i in range(0,df_Data.shape[0]):
     win = home_goals-away_goals
     if win > 0:
         win = 1
+    elif win < 0:
+        win = -1
     else:
-        win = 0 #no draw
+        win = 0
     y.append(win)
 
 
 X = df_Data
 y = pd.DataFrame(y)
 
-# Verify that result of SQL query is stored in the dataframe
-print(df_Data.head())
 
-con.close()
-
-#df_Data.to_excel("raw.xlsx")
-#df_Data.to_csv('raw.csv')
 df_Data.to_excel("encoded.xlsx")
 df_Data.to_csv('encoded.csv')
 
 
 
 #split into train/test
-#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, random_state=42) #using np array
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, random_state=42) #using df
 
+#standardize
+sc = StandardScaler()
+X_train = pd.DataFrame(sc.fit_transform(X_train),columns = X_train.columns,index=X_train.index)
 
+sc = StandardScaler()
+X_test = pd.DataFrame(sc.fit_transform(X_test),columns = X_test.columns,index=X_test.index)
 
 ###############PCA dim reduction (to play with), this uses its own preprocessing not the scaled data
 
-n_reducedfeatures = 3
+n_reducedfeatures = 10
 
 pca = decomposition.PCA(n_components=n_reducedfeatures)
 pca.fit(X_train)
 x_PCA = pca.transform(X_test)
 print('PCA total variance sum: ' + str(sum(pca.explained_variance_ratio_)))
-print(pd.DataFrame(pca.components_,columns=X_train.columns,index = ['PC-1','PC-2','PC-3']))
+#print(pd.DataFrame(pca.components_,columns=X_train.columns,index = ['PC-1','PC-2','PC-3']))
 
 fig = px.scatter_3d(x=x_PCA[:,0],y=x_PCA[:,1],z=x_PCA[:,2],color = y_test.to_numpy().reshape(-1))
-#plt.colorbar(graph)
-#plt.show()
+
 
 
 ##############logReg (to play with)
