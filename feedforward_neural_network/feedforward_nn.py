@@ -50,6 +50,9 @@ model.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metri
 
 model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.1)
 
+# SAVE MODEL
+model.save("model.keras")
+
 
 # Testing - Getting around ~40% accuracy currently
 loss, accuracy = model.evaluate(X_test, y_test)
