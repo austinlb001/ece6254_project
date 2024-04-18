@@ -29,23 +29,28 @@ con = sqlite3.connect("database.sqlite")
 year_greater = 2009 #we have no team attribute data before 2010
 
 df_TeamAttributes = pd.read_sql_query("SELECT * from Team_Attributes", con)
-df_Match = pd.read_sql_query("SELECT * from Match", con)
+# df_Match = pd.read_sql_query("SELECT * from Match", con)
+df_Match = pd.read_csv("./CombinedMatchOdds.csv")
+
+df_Match.iloc[-100:-1, :].to_csv("./MatchSample.csv")
+df_TeamAttributes.iloc[0:100, :].to_csv("./TeammAttrSample.csv")
+
 #df = df.loc[:, (df.columns != 'id' or df.columns != 'team_fifa_api_id')]
 #df = df.drop(['id','team_fifa_api_id','team_api_id'], axis=1)
-df_TeamAttributes['date'] = pd.to_datetime(df_TeamAttributes['date'])
-df_Match['date'] = pd.to_datetime(df_TeamAttributes['date'])
-df_Match = df_Match[df_Match.date.dt.year > year_greater] #drop all data we have no team attributes for
-#df_Data = pd.DataFrame()
+df_TeamAttributes['Date'] = pd.to_datetime(df_TeamAttributes['date'])
+df_Match['Date'] = pd.to_datetime(df_TeamAttributes['date'])
+df_Match = df_Match[df_Match.Date.dt.year > year_greater] #drop all data we have no team attributes for
+df_Data = pd.DataFrame()
 tmp_attr = []
 tmp_match = []
 tmp_attr_away = []
 tmp_match_away = []
 
 for i in range(0,df_Match.shape[0]):
-    yearfind = pd.to_datetime(df_Match.iloc[i].date).year
+    yearfind = pd.to_datetime(df_Match.iloc[i].Date).year
     team_id = df_Match.iloc[i].home_team_api_id
     away_team_id = df_Match.iloc[i].away_team_api_id
-    result = df_TeamAttributes[(df_TeamAttributes['team_api_id']==team_id) & (df_TeamAttributes['date'].dt.year==yearfind)]
+    result = df_TeamAttributes[(df_TeamAttributes['team_api_id']==team_id) & (df_TeamAttributes['date'].to_datetime().dt.year==yearfind)]
     result_away = df_TeamAttributes[(df_TeamAttributes['team_api_id']==away_team_id) & (df_TeamAttributes['date'].dt.year==yearfind)]
     if not any((result.empty,result_away.empty)):
         tmp_attr.append(result)
@@ -55,14 +60,14 @@ for i in range(0,df_Match.shape[0]):
 
 
 
-#########HOME##########
+# #########HOME##########
 tmp_attr = pd.concat(tmp_attr)
 tmp_attr = tmp_attr.reset_index(drop=True)
 tmp_match = pd.concat(tmp_match)
 tmp_match = tmp_match.reset_index(drop=True)
 tmp_match = tmp_match[['home_team_goal', 'away_team_goal']]
 df_Data = pd.concat([tmp_attr,tmp_match],axis=1)
-drop_list = ['id', 'team_fifa_api_id', 'team_api_id', 'date', 'buildUpPlayDribbling'] #too many NA in dribbling
+drop_list = ['id', 'team_fifa_api_id', 'team_api_id', 'Date', 'buildUpPlayDribbling'] #too many NA in dribbling
 df_Data = df_Data.drop(drop_list, axis=1)
 #df_Data = df_Data.dropna()
 
@@ -82,7 +87,7 @@ df_Data_home = df_Data
 tmp_attr_away = pd.concat(tmp_attr_away)
 tmp_attr_away = tmp_attr_away.reset_index(drop=True)
 df_Data = pd.concat([tmp_attr_away,tmp_match],axis=1)
-drop_list = ['id', 'team_fifa_api_id', 'team_api_id', 'date', 'buildUpPlayDribbling'] #too many NA in dribbling
+drop_list = ['id', 'team_fifa_api_id', 'team_api_id', 'Date', 'buildUpPlayDribbling'] #too many NA in dribbling
 df_Data = df_Data.drop(drop_list, axis=1)
 #df_Data = df_Data.dropna()
     
@@ -101,9 +106,13 @@ df_Data = df_Data_home - df_Data_away
 df_Data = pd.concat([df_Data,tmp_match],axis=1)
 df_Data = df_Data.dropna()
 
+<<<<<<< Updated upstream
 print(df_Data.head())
 
 con.close()
+=======
+df_Data.to_csv('./raw.csv')
+>>>>>>> Stashed changes
 
 y = []
 for i in range(0,df_Data.shape[0]):
