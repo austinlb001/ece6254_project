@@ -32,7 +32,7 @@ df_TeamAttributes = pd.read_sql_query("SELECT * from Team_Attributes", con)
 # df_Match = pd.read_sql_query("SELECT * from Match", con)
 df_Match = pd.read_csv("./CombinedMatchOdds.csv")
 
-df_Match.iloc[-100:-1, :].to_csv("./MatchSample.csv")
+# df_Match.iloc[-100:-1, :].to_csv("./MatchSample.csv")
 df_TeamAttributes.iloc[0:100, :].to_csv("./TeammAttrSample.csv")
 
 #df = df.loc[:, (df.columns != 'id' or df.columns != 'team_fifa_api_id')]
@@ -46,39 +46,43 @@ tmp_match = []
 tmp_attr_away = []
 tmp_match_away = []
 
+prelim_cols_to_drop = ["HomeTeam", "AwayTeam", "home_player_1", "home_player_2", "home_player_3", 
+                       "home_player_4", "home_player_5", "home_player_6", "home_player_7", "home_player_8", 
+                       "home_player_9", "home_player_10", "home_player_11", "away_player_1", "away_player_2", 
+                       "away_player_3", "away_player_4", "away_player_5", "away_player_6", "away_player_7", 
+                       "away_player_8", "away_player_9", "away_player_10", "away_player_11"]
+df_Match.drop(prelim_cols_to_drop, axis=1, inplace=True)
+
 for i in range(0,df_Match.shape[0]):
     yearfind = pd.to_datetime(df_Match.iloc[i].Date).year
     team_id = df_Match.iloc[i].home_team_api_id
     away_team_id = df_Match.iloc[i].away_team_api_id
-    result = df_TeamAttributes[(df_TeamAttributes['team_api_id']==team_id) & (df_TeamAttributes['date'].to_datetime().dt.year==yearfind)]
-    result_away = df_TeamAttributes[(df_TeamAttributes['team_api_id']==away_team_id) & (df_TeamAttributes['date'].dt.year==yearfind)]
+    result = df_TeamAttributes[(df_TeamAttributes['team_api_id']==team_id) & (pd.to_datetime(df_TeamAttributes['date']).dt.year==yearfind)]
+    result_away = df_TeamAttributes[(df_TeamAttributes['team_api_id']==away_team_id) & (pd.to_datetime(df_TeamAttributes['date']).dt.year==yearfind)]
     if not any((result.empty,result_away.empty)):
         tmp_attr.append(result)
         tmp_match.append(df_Match.iloc[[i]])
         tmp_attr_away.append(result_away)
-
-
-
 
 # #########HOME##########
 tmp_attr = pd.concat(tmp_attr)
 tmp_attr = tmp_attr.reset_index(drop=True)
 tmp_match = pd.concat(tmp_match)
 tmp_match = tmp_match.reset_index(drop=True)
-tmp_match = tmp_match[['home_team_goal', 'away_team_goal']]
 df_Data = pd.concat([tmp_attr,tmp_match],axis=1)
-drop_list = ['id', 'team_fifa_api_id', 'team_api_id', 'Date', 'buildUpPlayDribbling'] #too many NA in dribbling
+drop_list = ['id', 'team_fifa_api_id', 'team_api_id', 'date', "Date", 'buildUpPlayDribbling', "season"] #too many NA in dribbling
 df_Data = df_Data.drop(drop_list, axis=1)
 #df_Data = df_Data.dropna()
 
+# df_Data.sample(10).to_csv("./MatchSample.csv")
+# print(df_Data.loc[:, ["home_team_goal", "away_team_goal"]])
 
-    
 #encode strings
 encoder = OneHotEncoder(sparse_output=False)
 categorical_columns = df_Data.select_dtypes(include=['object']).columns.tolist()
-int_columns = df_Data.select_dtypes(include=['int']).columns.tolist()
+int_columns = df_Data.select_dtypes(include=['int', 'float']).columns.tolist()
 df_encoded = df_Data[categorical_columns].apply(preprocessing.LabelEncoder().fit_transform)
-data_encoded = pd.concat([df_Data[int_columns], df_encoded], axis=1)
+data_encoded = pd.concat([df_encoded, df_Data[int_columns]], axis=1)
 df_Data = data_encoded
 df_Data_home = df_Data
 ##########################
@@ -87,32 +91,23 @@ df_Data_home = df_Data
 tmp_attr_away = pd.concat(tmp_attr_away)
 tmp_attr_away = tmp_attr_away.reset_index(drop=True)
 df_Data = pd.concat([tmp_attr_away,tmp_match],axis=1)
-drop_list = ['id', 'team_fifa_api_id', 'team_api_id', 'Date', 'buildUpPlayDribbling'] #too many NA in dribbling
+drop_list = ['id', 'team_fifa_api_id', 'team_api_id', "date", 'Date', 'buildUpPlayDribbling', "season"] #too many NA in dribbling
 df_Data = df_Data.drop(drop_list, axis=1)
 #df_Data = df_Data.dropna()
     
 #encode strings
 encoder = OneHotEncoder(sparse_output=False)
 categorical_columns = df_Data.select_dtypes(include=['object']).columns.tolist()
-int_columns = df_Data.select_dtypes(include=['int']).columns.tolist()
+int_columns = df_Data.select_dtypes(include=['int', 'float']).columns.tolist()
 df_encoded = df_Data[categorical_columns].apply(preprocessing.LabelEncoder().fit_transform)
 data_encoded = pd.concat([df_Data[int_columns], df_encoded], axis=1)
 df_Data = data_encoded
 df_Data_away = df_Data
 
-df_Data = df_Data_home - df_Data_away
+df_Data.to_csv("./AwayData.csv")
+
+# df_Data = df_Data_home - df_Data_away
 ###########################
-
-df_Data = pd.concat([df_Data,tmp_match],axis=1)
-df_Data = df_Data.dropna()
-
-<<<<<<< Updated upstream
-print(df_Data.head())
-
-con.close()
-=======
-df_Data.to_csv('./raw.csv')
->>>>>>> Stashed changes
 
 y = []
 for i in range(0,df_Data.shape[0]):
@@ -127,10 +122,14 @@ for i in range(0,df_Data.shape[0]):
         win = 0
     y.append(win)
 
+df_Data["FTResult"] = y
+df_Data = df_Data.dropna()
 
-X = df_Data.drop(['home_team_goal','away_team_goal'],axis=1)
-y = pd.DataFrame(y)
+df_Data.to_csv('./raw.csv')
 
+
+X = df_Data.drop(['home_team_goal','away_team_goal', 'country_id', 'league_id',	'match_api_id', 'home_team_api_id', 'away_team_api_id'],axis=1)
+y = df_Data["FTResult"]
 
 df_Data.to_excel("encoded.xlsx")
 df_Data.to_csv('encoded.csv')
