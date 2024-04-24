@@ -30,7 +30,7 @@ from sklearn import metrics
 
 
 import os.path
-
+'''
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 db_path = os.path.join(BASE_DIR, "database.sqlite")
 
@@ -137,17 +137,43 @@ y = pd.to_numeric(y['Win'])
 
 #df_Data.to_excel("encoded.xlsx")
 #df_Data.to_csv('encoded.csv')
+'''
+
+df_Data = pd.read_csv ('raw.csv')
+df_Data = df_Data.drop(['match_api_id','home_team_api_id','stage','away_team_api_id','FTR','FTResult'], axis=1) #'home_team_goal','away_team_goal'
+df_Data = df_Data.drop(df_Data.columns[[0]],axis=1)
+#df_Odds = df_Data[['B365H','B365D','B365A']]
+#df_Data = df_Data.drop(['B365H','B365D','B365A'],axis=1)
 
 
+y = []
+for i in range(0,df_Data.shape[0]):
+    home_goals = pd.to_numeric(df_Data.iloc[i].home_team_goal)
+    away_goals = pd.to_numeric(df_Data.iloc[i].away_team_goal)
+    win = home_goals-away_goals
+    if win > 0:
+        win = 1
+    elif win < 0:
+        win = -1
+    else:
+        win = -1
+    y.append(win)
+
+X = df_Data.drop(['home_team_goal','away_team_goal'],axis=1)
+y = pd.DataFrame(y,columns=['Win'])
+y = pd.to_numeric(y['Win'])
 
 #split into train/test
-train_num=400
-valid_num=400
+train_num=250
+valid_num=250
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=.2, random_state=42) #using df
 #for train/val/test
 X_train2, X_test2, y_train2, y_test2 = train_test_split(X, y, train_size=train_num+valid_num, random_state=42) #using df
 X_train2, X_valid, y_train2, y_valid = train_test_split(X, y, train_size=valid_num, random_state=42) #using df
 
+df_Odds = X_test[['B365H','B365D','B365A']]
+#X_train = X_train.drop(['B365H','B365D','B365A'],axis=1)
+#X_test = X_test.drop(['B365H','B365D','B365A'],axis=1)
 #standardize
 sc = StandardScaler()
 X_train = pd.DataFrame(sc.fit_transform(X_train),columns = X_train.columns,index=X_train.index)
@@ -195,7 +221,7 @@ fig = px.scatter_matrix(
     title=f'Total Explained Variance: {total_var:.2f}%',
 )
 fig.update_traces(diagonal_visible=False)
-fig.show()
+#fig.show()
 
 
 
@@ -232,6 +258,7 @@ logRegr = LogisticRegression(C=Cvalvec[np.argmin(Pe_val)], penalty='l2')
 logRegr.fit(X_train,y_train)
 pred = logRegr.predict(X_test)
 score = logRegr.score(X_test,y_test)
+proba = logRegr.predict_proba(X_test)
 print('Logistic Regression score: ' + str(score))
 cnf_matrix = metrics.confusion_matrix(y_test, pred)
 class_names=[0,1] # name  of classes
@@ -248,6 +275,25 @@ plt.ylabel('Actual label')
 plt.xlabel('Predicted label')
 plt.show()
 #Text(0.5,257.44,'Predicted label');
+wrong = []
+df_prob_homewin = 1/df_Odds['B365H']
+for i in range(0,len(df_prob_homewin)):
+    if ((df_prob_homewin.iloc[[i][0]]>.5) and (y_test.iloc[i] == -1)):
+        wrong.append(1)
+
+
+        
+from matplotlib.colors import ListedColormap
+
+
+#plt.plot(np.linspace(0, 1, len(proba)),proba[:,1])
+#plt.plot(np.linspace(0, 1, len(df_Odds_homewin)),df_Odds_homewin)
+plt.scatter(np.linspace(0, 1, len(df_prob_homewin)),df_prob_homewin-proba[:,1], c=y_test)
+plt.title("B365 vs. Logistic Regression Probability of Home Team Win")
+plt.colorbar()
+plt.xlabel("Match")
+plt.ylabel("B365 - Logistic Regression Probability")
+plt.show()
 
 
 #RidgeRegression
